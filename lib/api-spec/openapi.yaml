@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Sports Student Digital Report Card API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: students
+    description: Student management
+  - name: metrics
+    description: Performance metrics
+  - name: rankings
+    description: Sport rankings
+  - name: dashboard
+    description: Dashboard summaries
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +30,278 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List all students
+      parameters:
+        - name: classFilter
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Add a new student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStudentBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get student by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update student info
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudentBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      summary: Delete a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /students/{id}/report-card:
+    get:
+      operationId: getStudentReportCard
+      tags: [metrics]
+      summary: Get full report card for a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportCard"
+        "404":
+          description: Not found
+
+  /metrics:
+    get:
+      operationId: listMetrics
+      tags: [metrics]
+      summary: List performance metrics
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: integer
+        - name: sport
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Metrics list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PerformanceMetric"
+    post:
+      operationId: createMetric
+      tags: [metrics]
+      summary: Add a performance metric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMetricBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceMetric"
+
+  /metrics/{id}:
+    patch:
+      operationId: updateMetric
+      tags: [metrics]
+      summary: Update a metric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMetricBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceMetric"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteMetric
+      tags: [metrics]
+      summary: Delete a metric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /rankings/{sport}:
+    get:
+      operationId: getRankings
+      tags: [rankings]
+      summary: Get rankings for a sport
+      parameters:
+        - name: sport
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [voleybol, basketbol, futbol]
+      responses:
+        "200":
+          description: Rankings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankingEntry"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard overview stats
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent activity feed
+      responses:
+        "200":
+          description: Activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEntry"
+
+  /dashboard/class-stats:
+    get:
+      operationId: getClassStats
+      tags: [dashboard]
+      summary: Get student counts and averages per class
+      responses:
+        "200":
+          description: Class stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClassStat"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +312,318 @@ components:
       required:
         - status
 
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        className:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        height:
+          type: number
+        weight:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - className
+        - birthDate
+        - height
+        - weight
+        - createdAt
+
+    CreateStudentBody:
+      type: object
+      properties:
+        name:
+          type: string
+        className:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        height:
+          type: number
+        weight:
+          type: number
+      required:
+        - name
+        - className
+        - birthDate
+        - height
+        - weight
+
+    UpdateStudentBody:
+      type: object
+      properties:
+        name:
+          type: string
+        className:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        height:
+          type: number
+        weight:
+          type: number
+
+    PerformanceMetric:
+      type: object
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        sport:
+          type: string
+          enum: [voleybol, basketbol, futbol]
+        speed:
+          type: number
+        endurance:
+          type: number
+        strength:
+          type: number
+        agility:
+          type: number
+        technique:
+          type: number
+        teamwork:
+          type: number
+        overallScore:
+          type: number
+        notes:
+          type: ["string", "null"]
+        evaluationDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - studentId
+        - sport
+        - speed
+        - endurance
+        - strength
+        - agility
+        - technique
+        - teamwork
+        - overallScore
+        - evaluationDate
+        - createdAt
+
+    CreateMetricBody:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        sport:
+          type: string
+          enum: [voleybol, basketbol, futbol]
+        speed:
+          type: number
+        endurance:
+          type: number
+        strength:
+          type: number
+        agility:
+          type: number
+        technique:
+          type: number
+        teamwork:
+          type: number
+        notes:
+          type: ["string", "null"]
+        evaluationDate:
+          type: string
+          format: date
+      required:
+        - studentId
+        - sport
+        - speed
+        - endurance
+        - strength
+        - agility
+        - technique
+        - teamwork
+        - evaluationDate
+
+    UpdateMetricBody:
+      type: object
+      properties:
+        speed:
+          type: number
+        endurance:
+          type: number
+        strength:
+          type: number
+        agility:
+          type: number
+        technique:
+          type: number
+        teamwork:
+          type: number
+        notes:
+          type: ["string", "null"]
+        evaluationDate:
+          type: string
+          format: date
+
+    ReportCard:
+      type: object
+      properties:
+        student:
+          $ref: "#/components/schemas/Student"
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/PerformanceMetric"
+        sportAverages:
+          type: array
+          items:
+            $ref: "#/components/schemas/SportAverage"
+        overallAverage:
+          type: number
+      required:
+        - student
+        - metrics
+        - sportAverages
+        - overallAverage
+
+    SportAverage:
+      type: object
+      properties:
+        sport:
+          type: string
+        averageScore:
+          type: number
+        metricCount:
+          type: integer
+      required:
+        - sport
+        - averageScore
+        - metricCount
+
+    RankingEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        className:
+          type: string
+        averageScore:
+          type: number
+        metricCount:
+          type: integer
+      required:
+        - rank
+        - studentId
+        - studentName
+        - className
+        - averageScore
+        - metricCount
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalStudents:
+          type: integer
+        totalMetrics:
+          type: integer
+        sportBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/SportBreakdown"
+        topPerformers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopPerformer"
+      required:
+        - totalStudents
+        - totalMetrics
+        - sportBreakdown
+        - topPerformers
+
+    SportBreakdown:
+      type: object
+      properties:
+        sport:
+          type: string
+        count:
+          type: integer
+        averageScore:
+          type: number
+      required:
+        - sport
+        - count
+        - averageScore
+
+    TopPerformer:
+      type: object
+      properties:
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        sport:
+          type: string
+        averageScore:
+          type: number
+      required:
+        - studentId
+        - studentName
+        - sport
+        - averageScore
+
+    ActivityEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [student_added, metric_added, student_updated, metric_updated]
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - description
+        - timestamp
+
+    ClassStat:
+      type: object
+      properties:
+        className:
+          type: string
+        studentCount:
+          type: integer
+        averageHeight:
+          type: number
+        averageWeight:
+          type: number
+        averageScore:
+          type: number
+      required:
+        - className
+        - studentCount
+        - averageHeight
+        - averageWeight
+        - averageScore
