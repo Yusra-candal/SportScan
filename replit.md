@@ -43,9 +43,20 @@ A Turkish-language web application for PE teachers to manage student athletic pe
 
 - `artifacts/spor-karne/` — React + Vite frontend (Turkish UI)
 - `artifacts/api-server/` — Express 5 API server
+- `services/jump-analyzer/` — Python Flask service for jump-height analysis via MediaPipe pose estimation (port 5000)
 - `lib/api-spec/` — OpenAPI spec (source of truth)
 - `lib/api-client-react/` — Generated React Query hooks
 - `lib/api-zod/` — Generated Zod validation schemas
 - `lib/db/` — Drizzle ORM schema and database client
+
+## Jump Analyzer Service
+
+A standalone Python Flask backend (not part of the Node monorepo) that accepts video uploads and estimates jump height.
+
+- **Endpoint**: `POST /analyze` with `multipart/form-data` (`video` field) → JSON with `jumpHeightCm`, apex frame, fps, etc.
+- **Health**: `GET /healthz`
+- **Algorithm**: MediaPipe Pose extracts hip and ankle landmarks per frame; hip vertical displacement (baseline → apex) is converted into meters using the median hip-to-ankle distance as a real-world ruler (~0.85 m for an average adult).
+- **Run**: `python services/jump-analyzer/app.py` (workflow: `Jump Analyzer`, port 5000)
+- **Deps**: flask, flask-cors, mediapipe==0.10.14, opencv-python-headless, numpy
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
