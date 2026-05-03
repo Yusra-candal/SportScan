@@ -10,119 +10,888 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-links button.active {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-bottom: 3px solid #4da6ff;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Dashboard Page */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #2a5298;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2a5298;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .recent-activity {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .recent-activity h2 {
+            margin-bottom: 20px;
+            color: #1e3c72;
+            font-size: 1.5em;
+        }
+
+        .activity-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Form Styles */
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            max-width: 600px;
+        }
+
+        .form-card h2 {
+            margin-bottom: 25px;
+            color: #1e3c72;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        input[type="email"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        .form-row .form-group {
+            margin-bottom: 0;
+        }
+
+        .file-upload {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
             width: 100%;
-            padding: 40px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }
-        .status {
-            background: #e8f5e9;
-            border-left: 4px solid #4caf50;
-            padding: 15px;
+            padding: 20px;
+            border: 2px dashed #2a5298;
             border-radius: 4px;
+            background-color: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            background-color: #f0f4f8;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .upload-text {
+            color: #2a5298;
+            font-weight: 500;
+        }
+
+        button.btn {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button.btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(42, 82, 152, 0.3);
+        }
+
+        button.btn:active {
+            transform: translateY(0);
+        }
+
+        /* Report Card Page */
+        .report-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
             margin-bottom: 30px;
-            text-align: left;
         }
-        .status h3 {
-            color: #2e7d32;
-            margin-bottom: 8px;
+
+        .student-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
         }
-        .status p {
-            color: #558b2f;
+
+        .student-info h3 {
+            color: #1e3c72;
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .student-info p {
+            color: #666;
             font-size: 0.95em;
         }
-        .info {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: left;
+
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 20px;
         }
-        .info h3 {
-            color: #333;
-            margin-bottom: 10px;
+
+        .metrics-table thead {
+            background-color: #f5f7fa;
         }
-        .info ul {
-            list-style-position: inside;
-            color: #666;
-            line-height: 1.8;
+
+        .metrics-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e3c72;
+            border-bottom: 2px solid #ddd;
         }
-        .footer {
-            color: #999;
-            font-size: 0.9em;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+
+        .metrics-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
         }
-        .badge {
-            display: inline-block;
-            background: #667eea;
+
+        .metric-value {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            margin-top: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        /* Ranking Page */
+        .ranking-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #333;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border-color: #2a5298;
+        }
+
+        .ranking-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .ranking-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .ranking-table thead {
+            background-color: #f5f7fa;
+        }
+
+        .ranking-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e3c72;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .ranking-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            font-weight: bold;
+            color: white;
+            margin-right: 10px;
+        }
+
+        .rank-1 {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+        }
+
+        .rank-2 {
+            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+            color: #333;
+        }
+
+        .rank-3 {
+            background: linear-gradient(135deg, #cd7f32 0%, #d4a373 100%);
+            color: #fff;
+        }
+
+        .rank-other {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar-container {
+                flex-direction: column;
+                height: auto;
+                padding: 15px 20px;
+            }
+
+            .nav-links {
+                gap: 15px;
+                margin-top: 15px;
+            }
+
+            .nav-links button {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .student-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .ranking-tabs {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                width: 100%;
+            }
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
         }
     </style>
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="logo">🏃 Spor Karne</div>
+            <ul class="nav-links">
+                <li><button class="nav-btn active" data-page="dashboard">Genel Bakış</button></li>
+                <li><button class="nav-btn" data-page="add-student">Öğrenci Ekle</button></li>
+                <li><button class="nav-btn" data-page="report">Karne</button></li>
+                <li><button class="nav-btn" data-page="ranking">Sıralama</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
     <div class="container">
-        <h1>🏃 Spor Karne</h1>
-        <p class="subtitle">Öğrenci Atletik Performans Yönetim Sistemi</p>
-        
-        <div class="status">
-            <h3>✅ Sistem Aktif</h3>
-            <p>Spor Karne servisi başarıyla çalışıyor. Öğrenci yönetimi, performans değerlendirme ve rapor kartı özelliklerine erişebilirsiniz.</p>
+        <!-- Dashboard Page -->
+        <div class="page active" id="dashboard">
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Toplam Öğrenci</div>
+                    <div class="stat-number" id="total-students">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Toplam Metrik</div>
+                    <div class="stat-number" id="total-metrics">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Voleybol</div>
+                    <div class="stat-number" id="volleyball-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Basketbol</div>
+                    <div class="stat-number" id="basketball-count">0</div>
+                </div>
+            </div>
+
+            <div class="recent-activity">
+                <h2>Son Aktivite</h2>
+                <div id="activity-list">
+                    <div class="no-data">Henüz aktivite yok</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="info">
-            <h3>📋 Ana Özellikler</h3>
-            <ul>
-                <li>Öğrenci bilgisi yönetimi (ad, sınıf, doğum tarihi, boy, kilo)</li>
-                <li>Spor performansı değerlendirmesi (voleybol, basketbol, futbol)</li>
-                <li>Dijital rapor kartı ve istatistikler</li>
-                <li>Sıçrama yüksekliği analizi (video analiz)</li>
-                <li>Spor bazında sıralama ve karşılaştırma</li>
-            </ul>
+
+        <!-- Add Student Page -->
+        <div class="page" id="add-student">
+            <div class="form-card">
+                <h2>Yeni Öğrenci Ekle</h2>
+                <div class="success-message" id="success-message">✓ Öğrenci başarıyla eklendi</div>
+                
+                <form id="add-student-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="student-name">Ad Soyad *</label>
+                            <input type="text" id="student-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="student-class">Sınıf *</label>
+                            <input type="text" id="student-class" placeholder="9-A" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="student-birth">Doğum Tarihi *</label>
+                            <input type="date" id="student-birth" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="student-gender">Cinsiyet *</label>
+                            <select id="student-gender" required>
+                                <option value="">Seçiniz</option>
+                                <option value="E">Erkek</option>
+                                <option value="K">Kadın</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="student-height">Boy (cm) *</label>
+                            <input type="number" id="student-height" min="100" max="220" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="student-weight">Kilo (kg) *</label>
+                            <input type="number" id="student-weight" min="30" max="200" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sıçrama Videosu (İsteğe Bağlı)</label>
+                        <div class="file-upload" onclick="document.getElementById('video-file').click()">
+                            <input type="file" id="video-file" accept="video/*">
+                            <span class="upload-text">📹 Tıkla veya Sürükle - Video Yükle</span>
+                        </div>
+                        <div id="video-filename" style="margin-top: 10px; color: #666;"></div>
+                    </div>
+
+                    <button type="submit" class="btn">Öğrenci Ekle</button>
+                </form>
+            </div>
         </div>
-        
-        <div class="info">
-            <h3>🔧 API Endpoints</h3>
-            <ul>
-                <li><code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">GET /api/healthz</code> - API durumu</li>
-                <li><code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">GET /api/students</code> - Öğrenci listesi</li>
-                <li><code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">POST /api/metrics</code> - Performans metriği ekle</li>
-                <li><code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">POST /video-api/analyze</code> - Sıçrama analizi</li>
-            </ul>
+
+        <!-- Report Card Page -->
+        <div class="page" id="report">
+            <div class="form-card" style="max-width: 100%; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px;">Öğrenci Seçin</h3>
+                <select id="student-select" style="width: 100%;">
+                    <option value="">-- Öğrenci Seçiniz --</option>
+                </select>
+            </div>
+
+            <div id="report-card-container" class="no-data" style="background: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);">
+                Rapor kartı görmek için bir öğrenci seçiniz
+            </div>
         </div>
-        
-        <div class="footer">
-            <p>Spor Karne v1.0 | PE Öğretmenleri için Dijital Rapor Kartı Sistemi</p>
-            <span class="badge">Render Deployment</span>
+
+        <!-- Ranking Page -->
+        <div class="page" id="ranking">
+            <div class="ranking-tabs">
+                <button class="tab-btn active" data-sport="voleybol">⚽ Voleybol</button>
+                <button class="tab-btn" data-sport="basketbol">🏀 Basketbol</button>
+                <button class="tab-btn" data-sport="futbol">⚽ Futbol</button>
+                <button class="tab-btn" data-sport="atletizm">🏃 Atletizm</button>
+            </div>
+
+            <div class="ranking-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Sıra</th>
+                            <th>Ad Soyad</th>
+                            <th>Sınıf</th>
+                            <th>Ortalama Puan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-tbody">
+                        <tr>
+                            <td colspan="4" class="no-data">Henüz veri yok</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Data Storage
+        class DataManager {
+            constructor() {
+                this.students = JSON.parse(localStorage.getItem('students')) || [];
+                this.metrics = JSON.parse(localStorage.getItem('metrics')) || [];
+                this.activities = JSON.parse(localStorage.getItem('activities')) || [];
+            }
+
+            saveStudents() {
+                localStorage.setItem('students', JSON.stringify(this.students));
+            }
+
+            saveMetrics() {
+                localStorage.setItem('metrics', JSON.stringify(this.metrics));
+            }
+
+            saveActivities() {
+                localStorage.setItem('activities', JSON.stringify(this.activities));
+            }
+
+            addStudent(student) {
+                student.id = Date.now().toString();
+                student.createdAt = new Date().toISOString();
+                this.students.push(student);
+                this.saveStudents();
+                this.addActivity(`Yeni öğrenci eklendi: ${student.name}`);
+                return student;
+            }
+
+            addMetric(metric) {
+                metric.id = Date.now().toString();
+                metric.createdAt = new Date().toISOString();
+                this.metrics.push(metric);
+                this.saveMetrics();
+                return metric;
+            }
+
+            addActivity(text) {
+                this.activities.unshift({
+                    text,
+                    timestamp: new Date().toLocaleString('tr-TR')
+                });
+                if (this.activities.length > 10) {
+                    this.activities.pop();
+                }
+                this.saveActivities();
+            }
+
+            getStudentMetrics(studentId) {
+                return this.metrics.filter(m => m.studentId === studentId);
+            }
+
+            getSportRankings(sport) {
+                const sportMetrics = this.metrics.filter(m => m.sport === sport);
+                const rankings = {};
+
+                sportMetrics.forEach(metric => {
+                    const student = this.students.find(s => s.id === metric.studentId);
+                    if (student) {
+                        if (!rankings[student.id]) {
+                            rankings[student.id] = {
+                                student,
+                                scores: [],
+                                count: 0
+                            };
+                        }
+                        rankings[student.id].scores.push(metric.overallScore);
+                        rankings[student.id].count++;
+                    }
+                });
+
+                Object.values(rankings).forEach(item => {
+                    item.average = item.scores.reduce((a, b) => a + b, 0) / item.count;
+                });
+
+                return Object.values(rankings)
+                    .sort((a, b) => b.average - a.average)
+                    .slice(0, 20);
+            }
+        }
+
+        const dataManager = new DataManager();
+
+        // Page Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const page = btn.dataset.page;
+                
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(page).classList.add('active');
+
+                if (page === 'dashboard') updateDashboard();
+                if (page === 'report') updateReportPage();
+                if (page === 'ranking') updateRankingPage();
+            });
+        });
+
+        // Update Dashboard
+        function updateDashboard() {
+            document.getElementById('total-students').textContent = dataManager.students.length;
+            document.getElementById('total-metrics').textContent = dataManager.metrics.length;
+            
+            const volleyballMetrics = dataManager.metrics.filter(m => m.sport === 'voleybol').length;
+            const basketballMetrics = dataManager.metrics.filter(m => m.sport === 'basketbol').length;
+            
+            document.getElementById('volleyball-count').textContent = volleyballMetrics;
+            document.getElementById('basketball-count').textContent = basketballMetrics;
+
+            const activityList = document.getElementById('activity-list');
+            if (dataManager.activities.length === 0) {
+                activityList.innerHTML = '<div class="no-data">Henüz aktivite yok</div>';
+            } else {
+                activityList.innerHTML = dataManager.activities.map(activity => `
+                    <div class="activity-item">
+                        <span>${activity.text}</span>
+                        <span style="color: #999; font-size: 0.9em;">${activity.timestamp}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Update Report Page
+        function updateReportPage() {
+            const select = document.getElementById('student-select');
+            select.innerHTML = '<option value="">-- Öğrenci Seçiniz --</option>';
+            
+            dataManager.students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = `${student.name} (${student.className})`;
+                select.appendChild(option);
+            });
+
+            select.addEventListener('change', showStudentReport);
+        }
+
+        function showStudentReport(e) {
+            const studentId = e.target.value;
+            const container = document.getElementById('report-card-container');
+
+            if (!studentId) {
+                container.innerHTML = 'Rapor kartı görmek için bir öğrenci seçiniz';
+                container.className = 'no-data';
+                return;
+            }
+
+            const student = dataManager.students.find(s => s.id === studentId);
+            const metrics = dataManager.getStudentMetrics(studentId);
+
+            if (metrics.length === 0) {
+                container.innerHTML = `<p>Bu öğrenci için henüz metrik kaydı yok</p>`;
+                container.className = 'no-data';
+                return;
+            }
+
+            container.className = 'report-card';
+            
+            const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear();
+            
+            container.innerHTML = `
+                <div class="student-header">
+                    <div class="student-info">
+                        <h3>${student.name}</h3>
+                        <p>Sınıf: ${student.className} | Yaş: ${age} | Cinsiyet: ${student.gender === 'E' ? 'Erkek' : 'Kadın'}</p>
+                        <p>Boy: ${student.height} cm | Kilo: ${student.weight} kg</p>
+                    </div>
+                </div>
+
+                <h3 style="margin: 20px 0; color: #1e3c72;">Performans Metrikleri</h3>
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Spor</th>
+                            <th>Hız</th>
+                            <th>Dayanıklılık</th>
+                            <th>Güç</th>
+                            <th>Çeviklik</th>
+                            <th>Teknik</th>
+                            <th>Takım Oyunu</th>
+                            <th>Genel Puan</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${metrics.map(metric => `
+                            <tr>
+                                <td><strong>${metric.sport}</strong></td>
+                                <td>${metric.speed}</td>
+                                <td>${metric.endurance}</td>
+                                <td>${metric.strength}</td>
+                                <td>${metric.agility}</td>
+                                <td>${metric.technique}</td>
+                                <td>${metric.teamwork}</td>
+                                <td><span class="metric-value">${metric.overallScore.toFixed(1)}</span></td>
+                                <td>${new Date(metric.evaluationDate).toLocaleDateString('tr-TR')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Update Ranking Page
+        function updateRankingPage() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', showRanking);
+            });
+            showRanking({ target: document.querySelector('.tab-btn.active') });
+        }
+
+        function showRanking(e) {
+            const sport = e.target.dataset.sport;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+
+            const rankings = dataManager.getSportRankings(sport);
+            const tbody = document.getElementById('ranking-tbody');
+
+            if (rankings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">Henüz veri yok</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rankings.map((item, index) => `
+                <tr>
+                    <td>
+                        <span class="rank-badge rank-${index === 0 ? '1' : index === 1 ? '2' : index === 2 ? '3' : 'other'}">
+                            ${index + 1}
+                        </span>
+                    </td>
+                    <td><strong>${item.student.name}</strong></td>
+                    <td>${item.student.className}</td>
+                    <td><span class="metric-value">${item.average.toFixed(1)}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Add Student Form
+        document.getElementById('add-student-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const student = {
+                name: document.getElementById('student-name').value,
+                className: document.getElementById('student-class').value,
+                birthDate: document.getElementById('student-birth').value,
+                gender: document.getElementById('student-gender').value,
+                height: parseInt(document.getElementById('student-height').value),
+                weight: parseInt(document.getElementById('student-weight').value)
+            };
+
+            dataManager.addStudent(student);
+
+            // Show success message
+            const msg = document.getElementById('success-message');
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 3000);
+
+            // Reset form
+            document.getElementById('add-student-form').reset();
+            document.getElementById('video-filename').textContent = '';
+        });
+
+        // Video file upload
+        document.getElementById('video-file').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                document.getElementById('video-filename').textContent = `✓ ${e.target.files[0].name}`;
+            }
+        });
+
+        // Initialize
+        updateDashboard();
+    </script>
 </body>
 </html>
