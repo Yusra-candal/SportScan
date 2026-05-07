@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useListStudents, getListStudentsQueryKey, useCreateStudent, useUpdateStudent, useDeleteStudent } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,20 +28,153 @@ const studentSchema = z.object({
 
 type StudentFormValues = z.infer<typeof studentSchema>;
 
-type AnalysisState =
+type UploadState =
   | { status: "idle" }
   | { status: "analyzing"; fileName: string }
-  | { status: "done"; jumpHeightCm: number; fileName: string }
+  | { status: "done"; resultCm: number; fileName: string }
   | { status: "error"; message: string; fileName: string };
+
+interface VideoUploadZoneProps {
+  inputId: string;
+  label: string;
+  hint: string;
+  heightCm: number;
+  state: UploadState;
+  onStateChange: (s: UploadState) => void;
+}
+
+function VideoUploadZone({ inputId, label, hint, heightCm, state, onStateChange }: VideoUploadZoneProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const analyze = useCallback(async (file: File) => {
+    onStateChange({ status: "analyzing", fileName: file.name });
+
+    const formData = new FormData();
+    formData.append("video", file);
+    if (heightCm >= 100 && heightCm <= 250) {
+      formData.append("height_cm", String(heightCm));
+    }
+
+    try {
+      const res = await fetch("/api/jump-analyze", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? `Sunucu hatası: ${res.status}`);
+      const resultCm = Math.round(data.jumpHeightCm ?? 0);
+      onStateChange({ status: "done", resultCm, fileName: file.name });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Bilinmeyen hata";
+      onStateChange({ status: "error", message, fileName: file.name });
+    }
+  }, [heightCm, onStateChange]);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      analyze(file);
+      e.target.value = "";
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("video/")) analyze(file);
+  }
+
+  const isAnalyzing = state.status === "analyzing";
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm font-medium leading-none">
+        {label} <span className="text-muted-foreground font-normal">(opsiyonel)</span>
+      </p>
+      <label
+        htmlFor={inputId}
+        className={cn(
+          "block border-2 border-dashed rounded-lg p-3 transition-colors",
+          !isAnalyzing ? "cursor-pointer" : "cursor-default pointer-events-none",
+          isDragOver
+            ? "border-primary bg-primary/5"
+            : state.status === "done"
+            ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+            : state.status === "error"
+            ? "border-destructive bg-destructive/5"
+            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
+        )}
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+      >
+        <input
+          id={inputId}
+          ref={inputRef}
+          type="file"
+          accept="video/*"
+          className="sr-only"
+          onChange={handleChange}
+          disabled={isAnalyzing}
+        />
+
+        {state.status === "idle" && (
+          <div className="flex items-center gap-3 py-1">
+            <Upload className="h-6 w-6 text-muted-foreground shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Video yüklemek için tıklayın</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>
+            </div>
+          </div>
+        )}
+
+        {state.status === "analyzing" && (
+          <div className="flex items-center gap-3 py-1">
+            <Loader2 className="h-6 w-6 text-primary animate-spin shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Analiz ediliyor...</p>
+              <p className="text-xs text-muted-foreground truncate">{state.fileName}</p>
+            </div>
+          </div>
+        )}
+
+        {state.status === "done" && (
+          <div className="flex items-center gap-3 py-1">
+            <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                Sonuç: <span className="text-lg font-bold">{state.resultCm} cm</span>
+              </p>
+              <p className="text-xs text-muted-foreground">Farklı video için tıklayın</p>
+            </div>
+          </div>
+        )}
+
+        {state.status === "error" && (
+          <div className="flex items-center gap-3 py-1">
+            <AlertCircle className="h-6 w-6 text-destructive shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-destructive">Analiz başarısız</p>
+              <p className="text-xs text-muted-foreground line-clamp-1">{state.message}</p>
+              <p className="text-xs text-primary mt-0.5">Tekrar denemek için tıklayın</p>
+            </div>
+          </div>
+        )}
+      </label>
+    </div>
+  );
+}
+
+const idleState: UploadState = { status: "idle" };
 
 export default function Students() {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
-  const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [ziplama, setZiplama] = useState<UploadState>(idleState);
+  const [esneklik, setEsneklik] = useState<UploadState>(idleState);
+  const [kosu, setKosu] = useState<UploadState>(idleState);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -75,51 +208,10 @@ export default function Students() {
 
   const heightValue = form.watch("height");
 
-  async function analyzeVideo(file: File) {
-    setAnalysis({ status: "analyzing", fileName: file.name });
-
-    const formData = new FormData();
-    formData.append("video", file);
-    const height = Number(heightValue);
-    if (height >= 100 && height <= 250) {
-      formData.append("height_cm", String(height));
-    }
-
-    try {
-      const response = await fetch("/api/jump-analyze", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        throw new Error(data.error ?? `Sunucu hatası: ${response.status}`);
-      }
-
-      const jumpHeightCm = Math.round(data.jumpHeightCm ?? 0);
-      setAnalysis({ status: "done", jumpHeightCm, fileName: file.name });
-      toast({ title: "Analiz tamamlandı", description: `Sıçrama yüksekliği: ${jumpHeightCm} cm` });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Bilinmeyen hata";
-      setAnalysis({ status: "error", message, fileName: file.name });
-      toast({ variant: "destructive", title: "Analiz hatası", description: message });
-    }
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) analyzeVideo(file);
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("video/")) {
-      analyzeVideo(file);
-    }
-  }
+  const isAnyAnalyzing =
+    ziplama.status === "analyzing" ||
+    esneklik.status === "analyzing" ||
+    kosu.status === "analyzing";
 
   const onSubmit = (data: StudentFormValues) => {
     if (editingStudentId) {
@@ -171,22 +263,19 @@ export default function Students() {
       height: student.height,
       weight: student.weight,
     });
-    setAnalysis({ status: "idle" });
+    setZiplama(idleState);
+    setEsneklik(idleState);
+    setKosu(idleState);
     setIsAddOpen(true);
   };
 
   const closeForm = () => {
     setIsAddOpen(false);
     setEditingStudentId(null);
-    setAnalysis({ status: "idle" });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    form.reset({
-      name: "",
-      className: "",
-      birthDate: "",
-      height: 170,
-      weight: 65,
-    });
+    setZiplama(idleState);
+    setEsneklik(idleState);
+    setKosu(idleState);
+    form.reset({ name: "", className: "", birthDate: "", height: 170, weight: 65 });
   };
 
   const classOptions = ["9-A", "9-B", "10-A", "10-B", "11-A", "11-B", "12-A", "12-B"];
@@ -202,7 +291,7 @@ export default function Students() {
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" /> Yeni Öğrenci</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingStudentId ? "Öğrenci Düzenle" : "Yeni Öğrenci Ekle"}</DialogTitle>
               <DialogDescription>
@@ -288,97 +377,44 @@ export default function Students() {
                   />
                 </div>
 
-                {/* Jump Video Upload — only shown when adding a new student */}
                 {!editingStudentId && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium leading-none">
-                      Sıçrama Videosu <span className="text-muted-foreground font-normal">(opsiyonel)</span>
+                  <div className="space-y-3 pt-2 border-t">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide pt-1">
+                      Video Testleri (Opsiyonel)
                     </p>
-                    <label
-                      htmlFor="jump-video-input"
-                      className={cn(
-                        "block relative border-2 border-dashed rounded-lg p-4 transition-colors",
-                        analysis.status !== "analyzing" ? "cursor-pointer" : "cursor-default pointer-events-none",
-                        isDragOver
-                          ? "border-primary bg-primary/5"
-                          : analysis.status === "done"
-                          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                          : analysis.status === "error"
-                          ? "border-destructive bg-destructive/5"
-                          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
-                      )}
-                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                      onDragLeave={() => setIsDragOver(false)}
-                      onDrop={handleDrop}
-                    >
-                      <input
-                        id="jump-video-input"
-                        ref={fileInputRef}
-                        type="file"
-                        accept="video/*"
-                        className="sr-only"
-                        onChange={handleFileChange}
-                        disabled={analysis.status === "analyzing"}
-                      />
-
-                      {analysis.status === "idle" && (
-                        <div className="flex flex-col items-center gap-2 py-2 text-center">
-                          <Upload className="h-8 w-8 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Video yüklemek için tıklayın veya sürükleyin</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Yan profil · 3× maksimum sıçrama</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {analysis.status === "analyzing" && (
-                        <div className="flex flex-col items-center gap-3 py-2">
-                          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                          <div className="text-center">
-                            <p className="text-sm font-medium">Video analiz ediliyor...</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[280px]">{analysis.fileName}</p>
-                          </div>
-                          <div className="w-full space-y-1.5 mt-1">
-                            {["Video yüklendi", "Pose estimation çalışıyor", "Sıçrama yüksekliği hesaplanıyor"].map((step, i) => (
-                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Loader2 className="h-3 w-3 animate-spin shrink-0" />
-                                <span>{step}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {analysis.status === "done" && (
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 className="h-8 w-8 text-green-600 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-green-700 dark:text-green-400">Analiz tamamlandı</p>
-                            <p className="text-xl font-bold text-green-800 dark:text-green-300">
-                              {analysis.jumpHeightCm} cm
-                            </p>
-                            <p className="text-xs text-muted-foreground">Sıçrama yüksekliği · farklı video için tıklayın</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {analysis.status === "error" && (
-                        <div className="flex items-center gap-3">
-                          <AlertCircle className="h-8 w-8 text-destructive shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-destructive">Analiz başarısız</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{analysis.message}</p>
-                            <p className="text-xs text-primary mt-1">Tekrar denemek için tıklayın</p>
-                          </div>
-                        </div>
-                      )}
-                    </label>
+                    <VideoUploadZone
+                      inputId="video-ziplama"
+                      label="Zıplama Testi"
+                      hint="Yan profil · 3× maksimum sıçrama"
+                      heightCm={Number(heightValue)}
+                      state={ziplama}
+                      onStateChange={setZiplama}
+                    />
+                    <VideoUploadZone
+                      inputId="video-esneklik"
+                      label="Esneklik Testi"
+                      hint="Öne eğilme · tam hareket açısı"
+                      heightCm={Number(heightValue)}
+                      state={esneklik}
+                      onStateChange={setEsneklik}
+                    />
+                    <VideoUploadZone
+                      inputId="video-kosu"
+                      label="Koşu Testi"
+                      hint="20m sprint · yan profil kamera"
+                      heightCm={Number(heightValue)}
+                      state={kosu}
+                      onStateChange={setKosu}
+                    />
                   </div>
                 )}
 
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={closeForm}>İptal</Button>
-                  <Button type="submit" disabled={createStudent.isPending || updateStudent.isPending || analysis.status === "analyzing"}>
+                  <Button
+                    type="submit"
+                    disabled={createStudent.isPending || updateStudent.isPending || isAnyAnalyzing}
+                  >
                     {createStudent.isPending || updateStudent.isPending ? (
                       <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Kaydediliyor...</>
                     ) : "Kaydet"}
