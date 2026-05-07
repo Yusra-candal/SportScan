@@ -509,12 +509,6 @@
     background: rgba(0,229,255,0.03);
   }
 
-  .upload-zone input[type=file] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-  }
 
   .upload-icon {
     font-size: 36px;
@@ -1136,12 +1130,15 @@
                 📌 Öğrenci standart spor salonu koşullarında çekilmeli. Her video için öğrenci tam yana veya cepheye dursun.
               </p>
 
+              <input type="file" id="vJump" accept="video/*" style="display:none" onchange="handleVideoUpload(this,'jump')">
+              <input type="file" id="vFlex" accept="video/*" style="display:none" onchange="handleVideoUpload(this,'flex')">
+              <input type="file" id="vRun"  accept="video/*" style="display:none" onchange="handleVideoUpload(this,'run')">
+
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
                 <!-- Zıplama -->
                 <div>
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🏃 Zıplama Videosu</div>
-                  <div class="upload-zone" onclick="triggerUpload('vJump')">
-                    <input type="file" id="vJump" accept="video/*" onchange="handleVideoUpload(this,'jump')">
+                  <div class="upload-zone" onclick="document.getElementById('vJump').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
                     <div class="upload-sub">Yan profil · 3× maksimum zıplama</div>
@@ -1153,8 +1150,7 @@
                 <!-- Esneklik -->
                 <div>
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🤸 Esneklik Videosu</div>
-                  <div class="upload-zone" onclick="triggerUpload('vFlex')">
-                    <input type="file" id="vFlex" accept="video/*" onchange="handleVideoUpload(this,'flex')">
+                  <div class="upload-zone" onclick="document.getElementById('vFlex').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
                     <div class="upload-sub">Cephe · Kol açma + öne eğilme</div>
@@ -1166,8 +1162,7 @@
                 <!-- Koşu -->
                 <div>
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">💨 Koşu Videosu</div>
-                  <div class="upload-zone" onclick="triggerUpload('vRun')">
-                    <input type="file" id="vRun" accept="video/*" onchange="handleVideoUpload(this,'run')">
+                  <div class="upload-zone" onclick="document.getElementById('vRun').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
                     <div class="upload-sub">Yan profil · 20m düz koşu</div>
