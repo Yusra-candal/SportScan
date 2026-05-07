@@ -294,10 +294,11 @@ export default function Students() {
                     <p className="text-sm font-medium leading-none">
                       Sıçrama Videosu <span className="text-muted-foreground font-normal">(opsiyonel)</span>
                     </p>
-                    <div
+                    <label
+                      htmlFor="jump-video-input"
                       className={cn(
-                        "relative border-2 border-dashed rounded-lg p-4 transition-colors",
-                        analysis.status !== "analyzing" && "cursor-pointer",
+                        "block relative border-2 border-dashed rounded-lg p-4 transition-colors",
+                        analysis.status !== "analyzing" ? "cursor-pointer" : "cursor-default pointer-events-none",
                         isDragOver
                           ? "border-primary bg-primary/5"
                           : analysis.status === "done"
@@ -306,17 +307,18 @@ export default function Students() {
                           ? "border-destructive bg-destructive/5"
                           : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
                       )}
-                      onClick={() => analysis.status !== "analyzing" && fileInputRef.current?.click()}
                       onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                       onDragLeave={() => setIsDragOver(false)}
                       onDrop={handleDrop}
                     >
                       <input
+                        id="jump-video-input"
                         ref={fileInputRef}
                         type="file"
                         accept="video/*"
-                        className="hidden"
+                        className="sr-only"
                         onChange={handleFileChange}
+                        disabled={analysis.status === "analyzing"}
                       />
 
                       {analysis.status === "idle" && (
@@ -370,7 +372,7 @@ export default function Students() {
                           </div>
                         </div>
                       )}
-                    </div>
+                    </label>
                   </div>
                 )}
 
