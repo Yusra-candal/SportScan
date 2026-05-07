@@ -14,11 +14,6 @@ name = "web"
 paths = [ "/" ]
 localPort = 22007
 
-[[services]]
-name = "jump-analyzer"
-paths = [ "/video-api" ]
-localPort = 5000
-
 [services.development]
 run = "pnpm --filter @workspace/spor-karne run dev"
 

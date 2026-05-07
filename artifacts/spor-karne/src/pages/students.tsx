@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useListStudents, getListStudentsQueryKey, useCreateStudent, useUpdateStudent, useDeleteStudent } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, Plus, Edit2, Trash2, ChevronRight } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, ChevronRight, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 const studentSchema = z.object({
   name: z.string().min(2, "Ad Soyad en az 2 karakter olmalıdır"),
@@ -27,24 +28,33 @@ const studentSchema = z.object({
 
 type StudentFormValues = z.infer<typeof studentSchema>;
 
+type AnalysisState =
+  | { status: "idle" }
+  | { status: "analyzing"; fileName: string }
+  | { status: "done"; jumpHeightCm: number; fileName: string }
+  | { status: "error"; message: string; fileName: string };
+
 export default function Students() {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
-  
+  const [analysis, setAnalysis] = useState<AnalysisState>({ status: "idle" });
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data: students, isLoading } = useListStudents(
-    { 
-      search: search || undefined, 
-      classFilter: classFilter !== "all" ? classFilter : undefined 
-    }, 
-    { 
-      query: { 
-        queryKey: getListStudentsQueryKey({ search: search || undefined, classFilter: classFilter !== "all" ? classFilter : undefined }) 
-      } 
+    {
+      search: search || undefined,
+      classFilter: classFilter !== "all" ? classFilter : undefined
+    },
+    {
+      query: {
+        queryKey: getListStudentsQueryKey({ search: search || undefined, classFilter: classFilter !== "all" ? classFilter : undefined })
+      }
     }
   );
 
@@ -58,10 +68,58 @@ export default function Students() {
       name: "",
       className: "",
       birthDate: "",
-      height: 150,
-      weight: 50,
+      height: 170,
+      weight: 65,
     },
   });
+
+  const heightValue = form.watch("height");
+
+  async function analyzeVideo(file: File) {
+    setAnalysis({ status: "analyzing", fileName: file.name });
+
+    const formData = new FormData();
+    formData.append("video", file);
+    const height = Number(heightValue);
+    if (height >= 100 && height <= 250) {
+      formData.append("height_cm", String(height));
+    }
+
+    try {
+      const response = await fetch("/api/jump-analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error ?? `Sunucu hatası: ${response.status}`);
+      }
+
+      const jumpHeightCm = Math.round(data.jumpHeightCm ?? 0);
+      setAnalysis({ status: "done", jumpHeightCm, fileName: file.name });
+      toast({ title: "Analiz tamamlandı", description: `Sıçrama yüksekliği: ${jumpHeightCm} cm` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Bilinmeyen hata";
+      setAnalysis({ status: "error", message, fileName: file.name });
+      toast({ variant: "destructive", title: "Analiz hatası", description: message });
+    }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) analyzeVideo(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("video/")) {
+      analyzeVideo(file);
+    }
+  }
 
   const onSubmit = (data: StudentFormValues) => {
     if (editingStudentId) {
@@ -113,18 +171,21 @@ export default function Students() {
       height: student.height,
       weight: student.weight,
     });
+    setAnalysis({ status: "idle" });
     setIsAddOpen(true);
   };
 
   const closeForm = () => {
     setIsAddOpen(false);
     setEditingStudentId(null);
+    setAnalysis({ status: "idle" });
+    if (fileInputRef.current) fileInputRef.current.value = "";
     form.reset({
       name: "",
       className: "",
       birthDate: "",
-      height: 150,
-      weight: 50,
+      height: 170,
+      weight: 65,
     });
   };
 
@@ -141,7 +202,7 @@ export default function Students() {
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" /> Yeni Öğrenci</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
               <DialogTitle>{editingStudentId ? "Öğrenci Düzenle" : "Yeni Öğrenci Ekle"}</DialogTitle>
               <DialogDescription>
@@ -170,7 +231,7 @@ export default function Students() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Sınıf</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Seçiniz" />
@@ -226,10 +287,99 @@ export default function Students() {
                     )}
                   />
                 </div>
+
+                {/* Jump Video Upload — only shown when adding a new student */}
+                {!editingStudentId && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium leading-none">
+                      Sıçrama Videosu <span className="text-muted-foreground font-normal">(opsiyonel)</span>
+                    </p>
+                    <div
+                      className={cn(
+                        "relative border-2 border-dashed rounded-lg p-4 transition-colors",
+                        analysis.status !== "analyzing" && "cursor-pointer",
+                        isDragOver
+                          ? "border-primary bg-primary/5"
+                          : analysis.status === "done"
+                          ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                          : analysis.status === "error"
+                          ? "border-destructive bg-destructive/5"
+                          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
+                      )}
+                      onClick={() => analysis.status !== "analyzing" && fileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                      onDragLeave={() => setIsDragOver(false)}
+                      onDrop={handleDrop}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+
+                      {analysis.status === "idle" && (
+                        <div className="flex flex-col items-center gap-2 py-2 text-center">
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">Video yüklemek için tıklayın veya sürükleyin</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Yan profil · 3× maksimum sıçrama</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {analysis.status === "analyzing" && (
+                        <div className="flex flex-col items-center gap-3 py-2">
+                          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                          <div className="text-center">
+                            <p className="text-sm font-medium">Video analiz ediliyor...</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[280px]">{analysis.fileName}</p>
+                          </div>
+                          <div className="w-full space-y-1.5 mt-1">
+                            {["Video yüklendi", "Pose estimation çalışıyor", "Sıçrama yüksekliği hesaplanıyor"].map((step, i) => (
+                              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                                <span>{step}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {analysis.status === "done" && (
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="h-8 w-8 text-green-600 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-green-700 dark:text-green-400">Analiz tamamlandı</p>
+                            <p className="text-xl font-bold text-green-800 dark:text-green-300">
+                              {analysis.jumpHeightCm} cm
+                            </p>
+                            <p className="text-xs text-muted-foreground">Sıçrama yüksekliği · farklı video için tıklayın</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {analysis.status === "error" && (
+                        <div className="flex items-center gap-3">
+                          <AlertCircle className="h-8 w-8 text-destructive shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-destructive">Analiz başarısız</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{analysis.message}</p>
+                            <p className="text-xs text-primary mt-1">Tekrar denemek için tıklayın</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={closeForm}>İptal</Button>
-                  <Button type="submit" disabled={createStudent.isPending || updateStudent.isPending}>
-                    {createStudent.isPending || updateStudent.isPending ? "Kaydediliyor..." : "Kaydet"}
+                  <Button type="submit" disabled={createStudent.isPending || updateStudent.isPending || analysis.status === "analyzing"}>
+                    {createStudent.isPending || updateStudent.isPending ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Kaydediliyor...</>
+                    ) : "Kaydet"}
                   </Button>
                 </DialogFooter>
               </form>
