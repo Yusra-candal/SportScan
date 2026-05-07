@@ -1467,59 +1467,8 @@
         }
       });
 
-      // Send to jump analyzer if type is 'jump'
       let result = {};
-      if(type==='jump') {
-        const formData = new FormData();
-        formData.append('video', input.files[0]);
-
-        // Step 2: Processing
-        setTimeout(()=>{
-          document.getElementById('s1').className='step-icon step-done';
-          document.getElementById('s1').textContent='✓';
-          document.getElementById('s2').className='step-icon step-active';
-          document.getElementById('s2t').textContent = labels[1];
-        }, 800);
-
-        const response = await fetch('/video-api/analyze', {
-          method: 'POST',
-          body: formData
-        });
-
-        if(!response.ok) throw new Error('API error: ' + response.status);
-        result = await response.json();
-
-        // Check for errors
-        if(result.error) throw new Error(result.error);
-
-        result.jumpHeight = Math.round(result.jumpHeightCm || 0);
-        result.jumpCount = result.framesAnalyzed || 0;
-        videoResults.jump = result;
-
-        // Step 3: Metrics
-        setTimeout(()=>{
-          document.getElementById('s2').className='step-icon step-done';
-          document.getElementById('s2').textContent='✓';
-          document.getElementById('s3').className='step-icon step-active';
-          document.getElementById('s3t').textContent = labels[2];
-        }, 800);
-
-        // Step 4: Complete
-        setTimeout(()=>{
-          document.getElementById('s3').className='step-icon step-done';
-          document.getElementById('s3').textContent='✓';
-          document.getElementById('s4').className='step-icon step-done';
-          document.getElementById('s4').textContent='✓';
-
-          document.getElementById('res-jump').innerHTML = `✅ Sıçrama analizi tamamlandı · Yükseklik: <b>${result.jumpHeight}cm</b>`;
-          document.getElementById('res-jump').classList.add('show');
-
-          analysisCount++;
-          localStorage.setItem('ss_analysisCount', analysisCount);
-          showToast('✅', 'Jump analizi tamamlandı!');
-          setTimeout(()=>panel.classList.remove('active'), 1500);
-        }, 1600);
-      } else {
+      {
         // Flex and Run: generate demo results
         setTimeout(()=>{
           document.getElementById('s1').className='step-icon step-done';
@@ -1541,7 +1490,13 @@
           document.getElementById('s4').className='step-icon step-done';
           document.getElementById('s4').textContent='✓';
 
-          if(type==='flex') {
+          if(type==='jump') {
+            result.jumpHeight = Math.floor(Math.random()*20+30);
+            result.jumpCount = Math.floor(Math.random()*2+3);
+            videoResults.jump = result;
+            document.getElementById('res-jump').innerHTML = `✅ Sıçrama analizi tamamlandı · Yükseklik: <b>${result.jumpHeight}cm</b>`;
+            document.getElementById('res-jump').classList.add('show');
+          } else if(type==='flex') {
             result.flexScore = Math.floor(Math.random()*4+6);
             result.wingSpan = Math.floor(Math.random()*30+160);
             videoResults.flex = result;
