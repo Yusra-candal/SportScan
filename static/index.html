@@ -963,19 +963,7 @@
   <aside class="sidebar">
     <div class="logo-area">
       <div class="logo">
-        <div class="logo-icon">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Head -->
-            <circle cx="14.5" cy="3.5" r="2" fill="white"/>
-            <!-- S-body: upper curve left, lower curve right — person in motion -->
-            <path d="M14 5.5C14 7.5 6 8 7 11C8 14 16 14 15 17C14 20 8 21 8 21"
-                  stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <!-- Speed lines -->
-            <line x1="0.5" y1="8.5"  x2="5"   y2="8.5"  stroke="white" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
-            <line x1="0"   y1="11"   x2="5.5"  y2="11"   stroke="white" stroke-width="1.4" stroke-linecap="round" opacity="0.80"/>
-            <line x1="0.5" y1="13.5" x2="5"   y2="13.5" stroke="white" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
-          </svg>
-        </div>
+        <div class="logo-icon">⚡</div>
         <div>
           <div class="logo-text">SportScan</div>
           <div class="logo-sub">Sporcu Analiz</div>
@@ -1315,25 +1303,6 @@
           <div class="sport-tab" onclick="switchSport('genel',this)">⚡ Genel</div>
         </div>
 
-        <!-- PDF Upload for ranking -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="card-header">
-            <div class="card-title">Karne Yükle → Sıralamaya Ekle</div>
-          </div>
-          <div class="card-body" style="display:flex;align-items:center;gap:16px">
-            <div class="upload-zone" style="flex:1;padding:20px;margin-bottom:0" onclick="triggerUpload('pdfUpload')">
-              <input type="file" id="pdfUpload" accept=".pdf,video/*" onchange="addToRanking(this)">
-              <div style="font-size:24px;margin-bottom:6px">📄</div>
-              <div style="font-size:13px;font-weight:600">PDF Karne Yükle</div>
-              <div style="font-size:11px;color:var(--muted)">Sistem otomatik sıralamaya ekler</div>
-            </div>
-            <div style="flex:2;font-size:13px;color:var(--muted);line-height:1.7">
-              Öğrenci karnesini bu bölüme yükleyin.<br>
-              Sistem seçili spor dalına göre puanı hesaplar<br>
-              ve listeye otomatik ekler.
-            </div>
-          </div>
-        </div>
 
         <div class="ranking-table">
           <div class="ranking-header">
