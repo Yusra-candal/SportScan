@@ -1138,7 +1138,7 @@
                 <!-- Zıplama -->
                 <div>
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🏃 Zıplama Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
-                  <div class="upload-zone" onclick="document.getElementById('vJump').click()">
+                  <div class="upload-zone" onclick="if(checkStudentInfo())document.getElementById('vJump').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
                     <div class="upload-sub">Yan profil · 3× maksimum zıplama</div>
@@ -1150,7 +1150,7 @@
                 <!-- Esneklik -->
                 <div>
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🤸 Esneklik Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
-                  <div class="upload-zone" onclick="document.getElementById('vFlex').click()">
+                  <div class="upload-zone" onclick="if(checkStudentInfo())document.getElementById('vFlex').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
                     <div class="upload-sub">Cephe · Kol açma + öne eğilme</div>
@@ -1162,7 +1162,7 @@
                 <!-- Koşu -->
                 <div>
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">💨 Koşu Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
-                  <div class="upload-zone" onclick="document.getElementById('vRun').click()">
+                  <div class="upload-zone" onclick="if(checkStudentInfo())document.getElementById('vRun').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
                     <div class="upload-sub">Yan profil · 20m düz koşu</div>
@@ -1447,6 +1447,16 @@
 
   // ========== Form ==========
   function triggerUpload(id) { document.getElementById(id).click(); }
+
+  function checkStudentInfo() {
+    const name   = document.getElementById('fName').value.trim();
+    const height = document.getElementById('fHeight').value.trim();
+    if(!name || !height) {
+      showToast('⚠️', 'Lütfen önce öğrenci bilgilerini doldurun');
+      return false;
+    }
+    return true;
+  }
 
   function stepDone(id) {
     document.getElementById(id).className='step-icon step-done';
