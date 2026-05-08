@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { useParams } from "wouter";
 import { useGetStudentReportCard, getGetStudentReportCardQueryKey, useGetStudent, getGetStudentQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
-import { ChevronLeft, Calendar, Ruler, Weight, User, Activity } from "lucide-react";
+import { ChevronLeft, Calendar, Ruler, Weight, User, Activity, Plus } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { NewMeasurementModal } from "@/components/new-measurement-modal";
 
 export default function StudentDetail() {
   const params = useParams();
   const id = parseInt(params.id || "0", 10);
+  const [measurementOpen, setMeasurementOpen] = useState(false);
 
   const { data: student, isLoading: isLoadingStudent } = useGetStudent(id, {
     query: { enabled: !!id, queryKey: getGetStudentQueryKey(id) }
@@ -89,24 +92,29 @@ export default function StudentDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/ogrenciler">
-          <Button variant="outline" size="icon">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{student.name}</h1>
-          <div className="flex items-center gap-2 mt-1 text-muted-foreground text-sm">
-            <User className="h-3 w-3" />
-            <span>Sınıf: {student.className}</span>
-            <Separator orientation="vertical" className="h-3" />
-            <span>Genel Ortalama: </span>
-            <Badge variant="secondary" className={getScoreColor(reportCard.overallAverage)}>
-              {reportCard.overallAverage.toFixed(1)} / 10
-            </Badge>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/ogrenciler">
+            <Button variant="outline" size="icon">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{student.name}</h1>
+            <div className="flex items-center gap-2 mt-1 text-muted-foreground text-sm">
+              <User className="h-3 w-3" />
+              <span>Sınıf: {student.className}</span>
+              <Separator orientation="vertical" className="h-3" />
+              <span>Genel Ortalama: </span>
+              <Badge variant="secondary" className={getScoreColor(reportCard.overallAverage)}>
+                {reportCard.overallAverage.toFixed(1)} / 10
+              </Badge>
+            </div>
           </div>
         </div>
+        <Button onClick={() => setMeasurementOpen(true)} className="shrink-0">
+          <Plus className="h-4 w-4 mr-2" /> Yeni Ölçüm Ekle
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -267,6 +275,11 @@ export default function StudentDetail() {
           </Card>
         </div>
       </div>
+      <NewMeasurementModal
+        open={measurementOpen}
+        onClose={() => setMeasurementOpen(false)}
+        student={student}
+      />
     </div>
   );
 }
