@@ -6,6 +6,7 @@ to detect a person's hip vertical motion, and computes jump height.
 
 import os
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import List, Tuple
 
 import cv2
@@ -25,12 +26,19 @@ mp_pose = mp.solutions.pose
 # We use the visible body length (hip -> ankle) as a real-world ruler.
 DEFAULT_HIP_TO_ANKLE_METERS = 0.85  # average adult; rough approximation
 
+# Process every Nth frame to reduce CPU time on slow hardware.
+FRAME_SKIP = 5
+
+# Maximum seconds allowed for the full analysis before returning a timeout error.
+ANALYSIS_TIMEOUT_SECONDS = 30
+
 
 def _extract_hip_trajectory(video_path: str) -> Tuple[List[float], List[float], float, int]:
     """
-    Walk the video frame by frame, extract average hip y-position (normalized 0..1),
-    and the average distance from hip to ankle (used as a meter scale).
-    Returns (hip_y_per_frame, hip_to_ankle_per_frame, fps, frame_count).
+    Walk the video frame by frame (every FRAME_SKIP-th frame), extract average
+    hip y-position (normalized 0..1) and the average distance from hip to ankle.
+    Returns (hip_y_per_frame, hip_to_ankle_per_frame, fps, total_frame_count).
+    The effective sample rate is fps / FRAME_SKIP.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -41,6 +49,7 @@ def _extract_hip_trajectory(video_path: str) -> Tuple[List[float], List[float], 
 
     hip_y_values: List[float] = []
     hip_to_ankle_values: List[float] = []
+    frame_num = 0
 
     with mp_pose.Pose(
         static_image_mode=False,
@@ -50,9 +59,19 @@ def _extract_hip_trajectory(video_path: str) -> Tuple[List[float], List[float], 
         min_tracking_confidence=0.5,
     ) as pose:
         while True:
+            # Use grab() for skipped frames — avoids full decode, much faster.
+            if frame_num % FRAME_SKIP != 0:
+                ok = cap.grab()
+                if not ok:
+                    break
+                frame_num += 1
+                continue
+
             ok, frame = cap.read()
             if not ok:
                 break
+            frame_num += 1
+
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             result = pose.process(rgb)
 
@@ -92,6 +111,9 @@ def _compute_jump_height(
     jump corresponds to a SMALLER y value. We use the difference between
     the baseline (max y -> standing) and the apex (min y) and convert it
     into meters using the average hip-to-ankle distance as a ruler.
+
+    fps here is the effective sample rate (original fps / FRAME_SKIP) so
+    that apex timing and smoothing window remain accurate.
     """
     if len(hip_y_values) < 5:
         raise ValueError("Insufficient pose data detected in the video")
@@ -126,7 +148,6 @@ def _compute_jump_height(
     apex_index = int(np.argmin(smoothed))
     apex_time_seconds = apex_index / fps if fps > 0 else 0.0
 
-    # Time of flight (apex height) physics-based double-check using h = 0.5 * g * (t/2)^2
     g = 9.81
 
     return {
@@ -134,16 +155,31 @@ def _compute_jump_height(
         "jumpHeightMeters": round(jump_meters, 4),
         "baselineHipY": round(baseline_y, 4),
         "apexHipY": round(apex_y, 4),
-        "apexFrame": apex_index,
+        "apexFrame": apex_index * FRAME_SKIP,
         "apexTimeSeconds": round(apex_time_seconds, 3),
         "framesAnalyzed": len(hip_y_values),
-        "fps": round(fps, 2),
+        "frameSkip": FRAME_SKIP,
+        "fps": round(fps * FRAME_SKIP, 2),
         "scaleReferenceMeters": DEFAULT_HIP_TO_ANKLE_METERS,
         "physicsCheck": {
             "gravity": g,
             "note": "Estimate is based on hip displacement using the athlete's hip-to-ankle length as a real-world ruler.",
         },
     }
+
+
+def _run_analysis(video_path: str, filename: str, frame_count: int) -> dict:
+    hip_y_values, hip_to_ankle_values, fps, _ = _extract_hip_trajectory(video_path)
+
+    if not hip_y_values:
+        raise ValueError("No human pose detected in the video")
+
+    # Pass effective fps (downsampled) so smoothing and timing are correct.
+    effective_fps = fps / FRAME_SKIP
+    result = _compute_jump_height(hip_y_values, hip_to_ankle_values, effective_fps)
+    result["totalFrames"] = frame_count
+    result["filename"] = filename
+    return result
 
 
 @app.route("/healthz", methods=["GET"])
@@ -166,14 +202,20 @@ def analyze():
         file.save(tmp.name)
         tmp.close()
 
-        hip_y_values, hip_to_ankle_values, fps, frame_count = _extract_hip_trajectory(tmp.name)
+        frame_count = int(
+            cv2.VideoCapture(tmp.name).get(cv2.CAP_PROP_FRAME_COUNT) or 0
+        )
 
-        if not hip_y_values:
-            return jsonify({"error": "No human pose detected in the video"}), 422
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_analysis, tmp.name, file.filename, frame_count)
+            try:
+                result = future.result(timeout=ANALYSIS_TIMEOUT_SECONDS)
+            except FuturesTimeoutError:
+                return jsonify({
+                    "error": f"Analysis timed out after {ANALYSIS_TIMEOUT_SECONDS} seconds. "
+                             "Try a shorter video (under 15 seconds)."
+                }), 504
 
-        result = _compute_jump_height(hip_y_values, hip_to_ankle_values, fps)
-        result["totalFrames"] = frame_count
-        result["filename"] = file.filename
         return jsonify(result)
     except ValueError as e:
         return jsonify({"error": str(e)}), 422
