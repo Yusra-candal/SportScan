@@ -1,12 +1,16 @@
 """
-Frontend web server that serves the Spor Karne static HTML
+Frontend web server that serves the Spor Karne static HTML.
 Also handles POST /video-api/analyze by calling the jump analyzer directly.
 """
 import os
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from pathlib import Path
-from flask import Flask, send_from_directory, jsonify, request
+from typing import Optional
+
+import cv2
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "services", "jump-analyzer"))
@@ -16,6 +20,7 @@ app = Flask(__name__, static_folder="static", static_url_path="/static")
 CORS(app)
 
 STATIC_DIR = Path(__file__).parent / "static"
+ANALYSIS_TIMEOUT = 30
 
 
 @app.route("/healthz")
@@ -32,24 +37,34 @@ def video_analyze():
     if file.filename == "":
         return jsonify({"error": "Empty filename"}), 400
 
+    height_cm: Optional[float] = None
+    raw_height = request.form.get("height_cm")
+    if raw_height:
+        try:
+            height_cm = float(raw_height)
+        except ValueError:
+            pass
+
     suffix = os.path.splitext(file.filename)[1] or ".mp4"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     try:
         file.save(tmp.name)
         tmp.close()
 
-        import cv2
         frame_count = int(cv2.VideoCapture(tmp.name).get(cv2.CAP_PROP_FRAME_COUNT) or 0)
 
-        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-        TIMEOUT = 30
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_run_analysis, tmp.name, file.filename, frame_count)
+            future = executor.submit(
+                _run_analysis, tmp.name, file.filename, frame_count, height_cm
+            )
             try:
-                result = future.result(timeout=TIMEOUT)
+                result = future.result(timeout=ANALYSIS_TIMEOUT)
             except FuturesTimeoutError:
                 return jsonify({
-                    "error": f"Analysis timed out after {TIMEOUT} seconds. Try a shorter video (under 15 seconds)."
+                    "error": (
+                        f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. "
+                        "Try a shorter video (under 15 seconds)."
+                    )
                 }), 504
 
         return jsonify(result)
