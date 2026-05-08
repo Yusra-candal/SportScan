@@ -293,6 +293,133 @@ def _run_sprint_analysis(video_path: str, filename: str, distance_meters: float 
     return result
 
 
+def _extract_flex_angle(video_path: str) -> dict:
+    """
+    Measure the maximum forward bend angle across all frames.
+    Angle is between the torso (hip→shoulder) and vertical:
+      0° = standing straight, 90° = horizontal, >90° = very flexible.
+    Uses the midpoint of left+right shoulders and left+right hips.
+    """
+    import math
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise ValueError("Video dosyası açılamadı")
+
+    pose = mp_pose.Pose(
+        static_image_mode=False,
+        model_complexity=1,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+    )
+
+    max_angle = 0.0
+    best_frame = 0
+    frame_idx = 0
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if frame_idx % FRAME_SKIP != 0:
+                frame_idx += 1
+                continue
+
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = pose.process(rgb)
+
+            if results.pose_landmarks:
+                lm = results.pose_landmarks.landmark
+                ls = lm[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                rs = lm[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+                lh = lm[mp_pose.PoseLandmark.LEFT_HIP]
+                rh = lm[mp_pose.PoseLandmark.RIGHT_HIP]
+
+                vis = min(ls.visibility, rs.visibility, lh.visibility, rh.visibility)
+                if vis < 0.3:
+                    frame_idx += 1
+                    continue
+
+                # Torso vector: hip midpoint → shoulder midpoint (image coords, y↓)
+                sh_x = (ls.x + rs.x) / 2
+                sh_y = (ls.y + rs.y) / 2
+                hi_x = (lh.x + rh.x) / 2
+                hi_y = (lh.y + rh.y) / 2
+                tx = sh_x - hi_x
+                ty = sh_y - hi_y
+
+                length = math.sqrt(tx * tx + ty * ty)
+                if length < 1e-6:
+                    frame_idx += 1
+                    continue
+
+                # Angle with vertical-up vector (0, -1) in image coords:
+                # cos(angle) = dot((tx,ty),(0,-1)) / length = -ty / length
+                cos_a = max(-1.0, min(1.0, -ty / length))
+                angle_deg = math.degrees(math.acos(cos_a))
+
+                if angle_deg > max_angle:
+                    max_angle = angle_deg
+                    best_frame = frame_idx
+
+            frame_idx += 1
+    finally:
+        cap.release()
+        pose.close()
+
+    if max_angle == 0.0:
+        raise ValueError("Vücut noktaları hiçbir karede tespit edilemedi")
+
+    return {
+        "flexAngleDeg": round(max_angle, 1),
+        "bestFrame":    best_frame,
+    }
+
+
+def _run_flex_analysis(video_path: str, filename: str) -> dict:
+    result = _extract_flex_angle(video_path)
+    result["filename"] = filename
+    return result
+
+
+@app.route("/flex-api/analyze", methods=["POST"])
+def flex_analyze():
+    if "video" not in request.files:
+        return jsonify({"error": "Missing 'video' file in multipart form-data"}), 400
+
+    file = request.files["video"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    suffix = os.path.splitext(file.filename)[1] or ".mp4"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        file.save(tmp.name)
+        tmp.close()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_flex_analysis, tmp.name, file.filename)
+            try:
+                result = future.result(timeout=ANALYSIS_TIMEOUT_SECONDS)
+            except FuturesTimeoutError:
+                return jsonify({
+                    "error": f"Analysis timed out after {ANALYSIS_TIMEOUT_SECONDS} seconds. Try a shorter video."
+                }), 504
+
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 422
+    except Exception as e:
+        return jsonify({"error": "Analysis failed", "detail": str(e)}), 500
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+
+
 @app.route("/healthz", methods=["GET"])
 def healthz():
     return jsonify({"status": "ok", "service": "jump-analyzer"})

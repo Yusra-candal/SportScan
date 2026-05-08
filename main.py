@@ -15,7 +15,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "services", "jump-analyzer"))
-from app import _run_analysis, _run_sprint_analysis  # noqa: E402
+from app import _run_analysis, _run_sprint_analysis, _run_flex_analysis  # noqa: E402
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 CORS(app)
@@ -98,6 +98,31 @@ def run_analyze():
                 pass
 
         result = _run_with_timeout(_run_sprint_analysis, tmp_path, file.filename, distance_meters)
+        return jsonify(result)
+    except FuturesTimeoutError:
+        return jsonify({"error": f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. Try a shorter video."}), 504
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 422
+    except Exception as e:
+        return jsonify({"error": "Analysis failed", "detail": str(e)}), 500
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+
+@app.route("/flex-api/analyze", methods=["POST"])
+def flex_analyze():
+    if "video" not in request.files:
+        return jsonify({"error": "Missing 'video' file in multipart form-data"}), 400
+    file = request.files["video"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    tmp_path = _save_upload(file)
+    try:
+        result = _run_with_timeout(_run_flex_analysis, tmp_path, file.filename)
         return jsonify(result)
     except FuturesTimeoutError:
         return jsonify({"error": f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. Try a shorter video."}), 504

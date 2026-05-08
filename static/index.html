@@ -1569,27 +1569,32 @@
           `✅ ${data.distanceMeters}m süresi: <b>${runTime}sn</b> · Hız: <b>${speedMs} m/s</b>`;
         document.getElementById('res-run').classList.add('show');
 
-      } else {
-        // Demo results for flex only
-        setTimeout(()=>{ stepDone('s1'); stepActive('s2', labels[1]); }, 800);
-        setTimeout(()=>{ stepDone('s2'); stepActive('s3', labels[2]); }, 1600);
-        setTimeout(()=>{
-          stepDone('s3'); stepDone('s4');
+      } else if(type === 'flex') {
+        const fd = new FormData();
+        fd.append('video', input.files[0]);
 
-          if(type === 'flex') {
-            const r = { flexScore: Math.floor(Math.random()*4+6), wingSpan: Math.floor(Math.random()*30+160) };
-            videoResults.flex = r;
-            document.getElementById('res-flex').innerHTML =
-              `✅ Esneklik skoru: <b>${r.flexScore}/10</b> · Kanat açıklığı: <b>${r.wingSpan}cm</b>`;
-            document.getElementById('res-flex').classList.add('show');
-          }
+        const resp = await fetch('/flex-api/analyze', { method: 'POST', body: fd });
 
-          analysisCount++;
-          localStorage.setItem('ss_analysisCount', analysisCount);
-          showToast('✅', 'Video analizi tamamlandı!');
-          setTimeout(()=>panel.classList.remove('active'), 1500);
-        }, 2400);
-        return;
+        stepDone('s1');
+        stepActive('s2', labels[1]);
+        stepDone('s2');
+        stepActive('s3', labels[2]);
+        stepDone('s3');
+        stepDone('s4');
+
+        if(!resp.ok) {
+          const err = await resp.json().catch(()=>({}));
+          showToast('❌', err.error || 'Analiz başarısız');
+          panel.classList.remove('active');
+          return;
+        }
+
+        const data = await resp.json();
+        const angle = data.flexAngleDeg ?? 0;
+        videoResults.flex = { flexAngleDeg: angle };
+        document.getElementById('res-flex').innerHTML =
+          `✅ Öne eğilme açısı: <b>${angle}°</b>`;
+        document.getElementById('res-flex').classList.add('show');
       }
 
       analysisCount++;
