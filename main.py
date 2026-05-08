@@ -89,7 +89,15 @@ def run_analyze():
 
     tmp_path = _save_upload(file)
     try:
-        result = _run_with_timeout(_run_sprint_analysis, tmp_path, file.filename)
+        distance_meters = 20.0
+        raw_dist = request.form.get("distance_meters")
+        if raw_dist:
+            try:
+                distance_meters = float(raw_dist)
+            except ValueError:
+                pass
+
+        result = _run_with_timeout(_run_sprint_analysis, tmp_path, file.filename, distance_meters)
         return jsonify(result)
     except FuturesTimeoutError:
         return jsonify({"error": f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. Try a shorter video."}), 504

@@ -215,7 +215,7 @@ def _run_analysis(
     return result
 
 
-def _extract_sprint_time(video_path: str) -> dict:
+def _extract_sprint_time(video_path: str, distance_meters: float = 20.0) -> dict:
     """
     Detect when the sprinter first enters and last exits the frame.
     Uses hip landmark visibility to find the true start/end of the run.
@@ -278,17 +278,17 @@ def _extract_sprint_time(video_path: str) -> dict:
 
     return {
         "runTimeSeconds": round(elapsed_seconds, 2),
-        "speedMs":        round(20.0 / elapsed_seconds, 2),
+        "speedMs":        round(distance_meters / elapsed_seconds, 2),
         "firstFrame":     first_frame,
         "lastFrame":      last_frame,
         "fps":            round(fps, 2),
         "totalFrames":    total_frames,
-        "distanceMeters": 20,
+        "distanceMeters": distance_meters,
     }
 
 
-def _run_sprint_analysis(video_path: str, filename: str) -> dict:
-    result = _extract_sprint_time(video_path)
+def _run_sprint_analysis(video_path: str, filename: str, distance_meters: float = 20.0) -> dict:
+    result = _extract_sprint_time(video_path, distance_meters)
     result["filename"] = filename
     return result
 
@@ -367,8 +367,16 @@ def run_analyze():
         file.save(tmp.name)
         tmp.close()
 
+        distance_meters = 20.0
+        raw_dist = request.form.get("distance_meters")
+        if raw_dist:
+            try:
+                distance_meters = float(raw_dist)
+            except ValueError:
+                pass
+
         with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_run_sprint_analysis, tmp.name, file.filename)
+            future = executor.submit(_run_sprint_analysis, tmp.name, file.filename, distance_meters)
             try:
                 result = future.result(timeout=ANALYSIS_TIMEOUT_SECONDS)
             except FuturesTimeoutError:
