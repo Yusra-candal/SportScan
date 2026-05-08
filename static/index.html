@@ -1533,8 +1533,38 @@
           `✅ Sıçrama analizi tamamlandı · Yükseklik: <b>${jumpHeight}cm</b>`;
         document.getElementById('res-jump').classList.add('show');
 
+      } else if(type === 'run') {
+        // Real sprint analysis via backend
+        const fd = new FormData();
+        fd.append('video', input.files[0]);
+
+        const resp = await fetch('/run-api/analyze', { method: 'POST', body: fd });
+
+        stepDone('s1');
+        stepActive('s2', labels[1]);
+
+        if(!resp.ok) {
+          const err = await resp.json().catch(()=>({error:'Bilinmeyen hata'}));
+          throw new Error(err.error || `HTTP ${resp.status}`);
+        }
+
+        stepDone('s2');
+        stepActive('s3', labels[2]);
+
+        const data = await resp.json();
+        const runTime = data.runTimeSeconds;
+        const speedMs = data.speedMs;
+
+        stepDone('s3');
+        stepDone('s4');
+
+        videoResults.run = { runTime };
+        document.getElementById('res-run').innerHTML =
+          `✅ 20m süresi: <b>${runTime}sn</b> · Hız: <b>${speedMs} m/s</b>`;
+        document.getElementById('res-run').classList.add('show');
+
       } else {
-        // Demo results for flex and run
+        // Demo results for flex only
         setTimeout(()=>{ stepDone('s1'); stepActive('s2', labels[1]); }, 800);
         setTimeout(()=>{ stepDone('s2'); stepActive('s3', labels[2]); }, 1600);
         setTimeout(()=>{
@@ -1546,12 +1576,6 @@
             document.getElementById('res-flex').innerHTML =
               `✅ Esneklik skoru: <b>${r.flexScore}/10</b> · Kanat açıklığı: <b>${r.wingSpan}cm</b>`;
             document.getElementById('res-flex').classList.add('show');
-          } else if(type === 'run') {
-            const r = { runTime: (Math.random()*1.5+2.8).toFixed(2), runForm: Math.floor(Math.random()*3+7) };
-            videoResults.run = r;
-            document.getElementById('res-run').innerHTML =
-              `✅ 20m süresi: <b>${r.runTime}sn</b> · Koşu formu: <b>${r.runForm}/10</b>`;
-            document.getElementById('res-run').classList.add('show');
           }
 
           analysisCount++;

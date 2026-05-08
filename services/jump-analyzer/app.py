@@ -215,6 +215,84 @@ def _run_analysis(
     return result
 
 
+def _extract_sprint_time(video_path: str) -> dict:
+    """
+    Detect when the sprinter first enters and last exits the frame.
+    Uses hip landmark visibility to find the true start/end of the run.
+    Returns runTimeSeconds and speedMs for a 20 m sprint.
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise ValueError("Could not open video file")
+
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+
+    first_frame: Optional[int] = None
+    last_frame: Optional[int] = None
+    frame_idx = 0
+
+    with mp_pose.Pose(
+        static_image_mode=False,
+        model_complexity=1,
+        enable_segmentation=False,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+    ) as pose:
+        while True:
+            if frame_idx % FRAME_SKIP != 0:
+                ok = cap.grab()
+                if not ok:
+                    break
+                frame_idx += 1
+                continue
+
+            ok, frame = cap.read()
+            if not ok:
+                break
+
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            result = pose.process(rgb)
+
+            if result.pose_landmarks:
+                lms = result.pose_landmarks.landmark
+                left_hip  = lms[mp_pose.PoseLandmark.LEFT_HIP.value]
+                right_hip = lms[mp_pose.PoseLandmark.RIGHT_HIP.value]
+                if left_hip.visibility > 0.5 or right_hip.visibility > 0.5:
+                    if first_frame is None:
+                        first_frame = frame_idx
+                    last_frame = frame_idx
+
+            frame_idx += 1
+
+    cap.release()
+
+    if first_frame is None or last_frame is None:
+        raise ValueError("Videoda koşucu tespit edilemedi")
+    if first_frame == last_frame:
+        raise ValueError("Koşucu yalnızca tek karede görüldü — video çok kısa")
+
+    elapsed_seconds = (last_frame - first_frame) / fps
+    if elapsed_seconds < 1.0:
+        raise ValueError("Geçen süre çok kısa — koşucu daha uzun süre görünmeli")
+
+    return {
+        "runTimeSeconds": round(elapsed_seconds, 2),
+        "speedMs":        round(20.0 / elapsed_seconds, 2),
+        "firstFrame":     first_frame,
+        "lastFrame":      last_frame,
+        "fps":            round(fps, 2),
+        "totalFrames":    total_frames,
+        "distanceMeters": 20,
+    }
+
+
+def _run_sprint_analysis(video_path: str, filename: str) -> dict:
+    result = _extract_sprint_time(video_path)
+    result["filename"] = filename
+    return result
+
+
 @app.route("/healthz", methods=["GET"])
 def healthz():
     return jsonify({"status": "ok", "service": "jump-analyzer"})
@@ -260,6 +338,42 @@ def analyze():
                         f"Analysis timed out after {ANALYSIS_TIMEOUT_SECONDS} seconds. "
                         "Try a shorter video (under 15 seconds)."
                     )
+                }), 504
+
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 422
+    except Exception as e:
+        return jsonify({"error": "Analysis failed", "detail": str(e)}), 500
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+
+
+@app.route("/run-api/analyze", methods=["POST"])
+def run_analyze():
+    if "video" not in request.files:
+        return jsonify({"error": "Missing 'video' file in multipart form-data"}), 400
+
+    file = request.files["video"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    suffix = os.path.splitext(file.filename)[1] or ".mp4"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        file.save(tmp.name)
+        tmp.close()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_sprint_analysis, tmp.name, file.filename)
+            try:
+                result = future.result(timeout=ANALYSIS_TIMEOUT_SECONDS)
+            except FuturesTimeoutError:
+                return jsonify({
+                    "error": f"Analysis timed out after {ANALYSIS_TIMEOUT_SECONDS} seconds. Try a shorter video."
                 }), 504
 
         return jsonify(result)

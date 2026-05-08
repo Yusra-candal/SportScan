@@ -1,6 +1,7 @@
 """
 Frontend web server that serves the Spor Karne static HTML.
-Also handles POST /video-api/analyze by calling the jump analyzer directly.
+Handles POST /video-api/analyze (jump height) and POST /run-api/analyze (sprint time)
+by calling the analyzer service directly — no Express proxy needed on Render.
 """
 import os
 import sys
@@ -14,13 +15,29 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "services", "jump-analyzer"))
-from app import _run_analysis  # noqa: E402
+from app import _run_analysis, _run_sprint_analysis  # noqa: E402
 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 CORS(app)
 
 STATIC_DIR = Path(__file__).parent / "static"
 ANALYSIS_TIMEOUT = 30
+
+
+def _save_upload(file) -> str:
+    """Save an uploaded video to a temp file and return its path."""
+    suffix = os.path.splitext(file.filename)[1] or ".mp4"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    file.save(tmp.name)
+    tmp.close()
+    return tmp.name
+
+
+def _run_with_timeout(fn, *args):
+    """Run fn(*args) in a thread with ANALYSIS_TIMEOUT seconds."""
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(fn, *args)
+        return future.result(timeout=ANALYSIS_TIMEOUT)
 
 
 @app.route("/healthz")
@@ -32,49 +49,57 @@ def healthz():
 def video_analyze():
     if "video" not in request.files:
         return jsonify({"error": "Missing 'video' file in multipart form-data"}), 400
-
     file = request.files["video"]
     if file.filename == "":
         return jsonify({"error": "Empty filename"}), 400
 
     height_cm: Optional[float] = None
-    raw_height = request.form.get("height_cm")
-    if raw_height:
+    raw = request.form.get("height_cm")
+    if raw:
         try:
-            height_cm = float(raw_height)
+            height_cm = float(raw)
         except ValueError:
             pass
 
-    suffix = os.path.splitext(file.filename)[1] or ".mp4"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp_path = _save_upload(file)
     try:
-        file.save(tmp.name)
-        tmp.close()
-
-        frame_count = int(cv2.VideoCapture(tmp.name).get(cv2.CAP_PROP_FRAME_COUNT) or 0)
-
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(
-                _run_analysis, tmp.name, file.filename, frame_count, height_cm
-            )
-            try:
-                result = future.result(timeout=ANALYSIS_TIMEOUT)
-            except FuturesTimeoutError:
-                return jsonify({
-                    "error": (
-                        f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. "
-                        "Try a shorter video (under 15 seconds)."
-                    )
-                }), 504
-
+        frame_count = int(cv2.VideoCapture(tmp_path).get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        result = _run_with_timeout(_run_analysis, tmp_path, file.filename, frame_count, height_cm)
         return jsonify(result)
+    except FuturesTimeoutError:
+        return jsonify({"error": f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. Try a shorter video (under 15 seconds)."}), 504
     except ValueError as e:
         return jsonify({"error": str(e)}), 422
     except Exception as e:
         return jsonify({"error": "Analysis failed", "detail": str(e)}), 500
     finally:
         try:
-            os.unlink(tmp.name)
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+
+@app.route("/run-api/analyze", methods=["POST"])
+def run_analyze():
+    if "video" not in request.files:
+        return jsonify({"error": "Missing 'video' file in multipart form-data"}), 400
+    file = request.files["video"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    tmp_path = _save_upload(file)
+    try:
+        result = _run_with_timeout(_run_sprint_analysis, tmp_path, file.filename)
+        return jsonify(result)
+    except FuturesTimeoutError:
+        return jsonify({"error": f"Analysis timed out after {ANALYSIS_TIMEOUT} seconds. Try a shorter video."}), 504
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 422
+    except Exception as e:
+        return jsonify({"error": "Analysis failed", "detail": str(e)}), 500
+    finally:
+        try:
+            os.unlink(tmp_path)
         except OSError:
             pass
 
