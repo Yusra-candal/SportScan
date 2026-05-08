@@ -4,7 +4,7 @@ import http from "http";
 
 const router = Router();
 
-router.post("/jump-analyze", (req: Request, res: Response) => {
+function proxyToAnalyzer(req: Request, res: Response) {
   const options: http.RequestOptions = {
     hostname: "localhost",
     port: 5000,
@@ -39,6 +39,9 @@ router.post("/jump-analyze", (req: Request, res: Response) => {
   });
 
   req.pipe(proxyReq);
-});
+}
+
+router.post("/jump-analyze", proxyToAnalyzer);
+router.post("/analyze", proxyToAnalyzer);
 
 export default router;

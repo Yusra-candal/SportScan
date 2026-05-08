@@ -1137,7 +1137,7 @@
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
                 <!-- Zıplama -->
                 <div>
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🏃 Zıplama Videosu</div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🏃 Zıplama Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
                   <div class="upload-zone" onclick="document.getElementById('vJump').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
@@ -1149,7 +1149,7 @@
                 </div>
                 <!-- Esneklik -->
                 <div>
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🤸 Esneklik Videosu</div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🤸 Esneklik Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
                   <div class="upload-zone" onclick="document.getElementById('vFlex').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
@@ -1161,7 +1161,7 @@
                 </div>
                 <!-- Koşu -->
                 <div>
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">💨 Koşu Videosu</div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">💨 Koşu Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
                   <div class="upload-zone" onclick="document.getElementById('vRun').click()">
                     <div class="upload-icon">🎥</div>
                     <div class="upload-title">Video Yükle</div>
@@ -1448,65 +1448,76 @@
   // ========== Form ==========
   function triggerUpload(id) { document.getElementById(id).click(); }
 
+  function stepDone(id) {
+    document.getElementById(id).className='step-icon step-done';
+    document.getElementById(id).textContent='✓';
+  }
+  function stepActive(id, label) {
+    document.getElementById(id).className='step-icon step-active';
+    if(document.getElementById(id+'t')) document.getElementById(id+'t').textContent = label;
+  }
+
   async function handleVideoUpload(input, type) {
     if(!input.files.length) return;
     const panel = document.getElementById('analysisPanel');
     panel.classList.add('active');
 
-    const steps = ['s1','s2','s3','s4'];
     const labels = [
       'Video yükleniyor...','Pose estimation çalışıyor...','Metrikler hesaplanıyor...','Karne güncelleniyor...'
     ];
-    
+
+    stepActive('s1', labels[0]);
+
     try {
-      // Step 1: Upload
-      steps.forEach((s,i)=>{
-        if(i===0) {
-          document.getElementById(s).className='step-icon step-active';
-          document.getElementById(s+'t') && (document.getElementById(s+'t').textContent = labels[i]);
+      if(type === 'jump') {
+        // Real MediaPipe analysis via backend
+        const fd = new FormData();
+        fd.append('video', input.files[0]);
+        const heightVal = parseInt(document.getElementById('fHeight').value);
+        if(heightVal) fd.append('height_cm', heightVal);
+
+        const resp = await fetch('/video-api/analyze', { method:'POST', body: fd });
+
+        stepDone('s1');
+        stepActive('s2', labels[1]);
+
+        if(!resp.ok) {
+          const err = await resp.json().catch(()=>({error:'Bilinmeyen hata'}));
+          throw new Error(err.error || `HTTP ${resp.status}`);
         }
-      });
 
-      let result = {};
-      {
-        // Flex and Run: generate demo results
+        stepDone('s2');
+        stepActive('s3', labels[2]);
+
+        const data = await resp.json();
+        const jumpHeight = Math.round(data.jumpHeightCm ?? 0);
+
+        stepDone('s3');
+        stepDone('s4');
+
+        videoResults.jump = { jumpHeight };
+        document.getElementById('res-jump').innerHTML =
+          `✅ Sıçrama analizi tamamlandı · Yükseklik: <b>${jumpHeight}cm</b>`;
+        document.getElementById('res-jump').classList.add('show');
+
+      } else {
+        // Demo results for flex and run
+        setTimeout(()=>{ stepDone('s1'); stepActive('s2', labels[1]); }, 800);
+        setTimeout(()=>{ stepDone('s2'); stepActive('s3', labels[2]); }, 1600);
         setTimeout(()=>{
-          document.getElementById('s1').className='step-icon step-done';
-          document.getElementById('s1').textContent='✓';
-          document.getElementById('s2').className='step-icon step-active';
-          document.getElementById('s2t').textContent = labels[1];
-        }, 800);
+          stepDone('s3'); stepDone('s4');
 
-        setTimeout(()=>{
-          document.getElementById('s2').className='step-icon step-done';
-          document.getElementById('s2').textContent='✓';
-          document.getElementById('s3').className='step-icon step-active';
-          document.getElementById('s3t').textContent = labels[2];
-        }, 1600);
-
-        setTimeout(()=>{
-          document.getElementById('s3').className='step-icon step-done';
-          document.getElementById('s3').textContent='✓';
-          document.getElementById('s4').className='step-icon step-done';
-          document.getElementById('s4').textContent='✓';
-
-          if(type==='jump') {
-            result.jumpHeight = Math.floor(Math.random()*20+30);
-            result.jumpCount = Math.floor(Math.random()*2+3);
-            videoResults.jump = result;
-            document.getElementById('res-jump').innerHTML = `✅ Sıçrama analizi tamamlandı · Yükseklik: <b>${result.jumpHeight}cm</b>`;
-            document.getElementById('res-jump').classList.add('show');
-          } else if(type==='flex') {
-            result.flexScore = Math.floor(Math.random()*4+6);
-            result.wingSpan = Math.floor(Math.random()*30+160);
-            videoResults.flex = result;
-            document.getElementById('res-flex').innerHTML = `✅ Esneklik skoru: <b>${result.flexScore}/10</b> · Kanat açıklığı: <b>${result.wingSpan}cm</b>`;
+          if(type === 'flex') {
+            const r = { flexScore: Math.floor(Math.random()*4+6), wingSpan: Math.floor(Math.random()*30+160) };
+            videoResults.flex = r;
+            document.getElementById('res-flex').innerHTML =
+              `✅ Esneklik skoru: <b>${r.flexScore}/10</b> · Kanat açıklığı: <b>${r.wingSpan}cm</b>`;
             document.getElementById('res-flex').classList.add('show');
-          } else if(type==='run') {
-            result.runTime = (Math.random()*1.5+2.8).toFixed(2);
-            result.runForm = Math.floor(Math.random()*3+7);
-            videoResults.run = result;
-            document.getElementById('res-run').innerHTML = `✅ 20m süresi: <b>${result.runTime}sn</b> · Koşu formu: <b>${result.runForm}/10</b>`;
+          } else if(type === 'run') {
+            const r = { runTime: (Math.random()*1.5+2.8).toFixed(2), runForm: Math.floor(Math.random()*3+7) };
+            videoResults.run = r;
+            document.getElementById('res-run').innerHTML =
+              `✅ 20m süresi: <b>${r.runTime}sn</b> · Koşu formu: <b>${r.runForm}/10</b>`;
             document.getElementById('res-run').classList.add('show');
           }
 
@@ -1515,11 +1526,18 @@
           showToast('✅', 'Video analizi tamamlandı!');
           setTimeout(()=>panel.classList.remove('active'), 1500);
         }, 2400);
+        return;
       }
+
+      analysisCount++;
+      localStorage.setItem('ss_analysisCount', analysisCount);
+      showToast('✅', 'Video analizi tamamlandı!');
+      setTimeout(()=>panel.classList.remove('active'), 1500);
+
     } catch(e) {
       console.error('Video upload error:', e);
-      showToast('❌', `Hata: ${e.message}`);
-      document.getElementById('analysisPanel').classList.remove('active');
+      showToast('❌', `Analiz hatası: ${e.message}`);
+      panel.classList.remove('active');
     }
   }
 
