@@ -188,6 +188,7 @@ def healthz():
 
 
 @app.route("/analyze", methods=["POST"])
+@app.route("/video-api/analyze", methods=["POST"])
 def analyze():
     if "video" not in request.files:
         return jsonify({"error": "Missing 'video' file in multipart form-data"}), 400
