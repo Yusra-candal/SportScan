@@ -1120,131 +1120,153 @@
             </div>
           </div>
 
-          <div class="section-divider">
-            <span>Video Analizi</span>
-          </div>
-
-          <div class="card" style="margin-bottom:20px">
-            <div class="card-body">
-              <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
-                📌 Öğrenci standart spor salonu koşullarında çekilmeli. Her video için öğrenci tam yana veya cepheye dursun.
-              </p>
-
-              <input type="file" id="vJump" accept="video/*" style="display:none" onchange="handleVideoUpload(this,'jump')">
-              <input type="file" id="vFlex" accept="video/*" style="display:none" onchange="handleVideoUpload(this,'flex')">
-              <input type="file" id="vRun"  accept="video/*" style="display:none" onchange="handleVideoUpload(this,'run')">
-
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-                <!-- Zıplama -->
-                <div>
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🏃 Zıplama Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
-                  <div class="upload-zone" onclick="if(checkStudentInfo())document.getElementById('vJump').click()">
-                    <div class="upload-icon">🎥</div>
-                    <div class="upload-title">Video Yükle</div>
-                    <div class="upload-sub">Yan profil · 3× maksimum zıplama</div>
-                  </div>
-                  <div class="upload-result" id="res-jump">
-                    ✅ Analiz tamamlandı
-                  </div>
-                </div>
-                <!-- Esneklik -->
-                <div>
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🤸 Esneklik Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
-                  <div class="upload-zone" onclick="if(checkStudentInfo())document.getElementById('vFlex').click()">
-                    <div class="upload-icon">🎥</div>
-                    <div class="upload-title">Video Yükle</div>
-                    <div class="upload-sub">Cephe · Kol açma + öne eğilme</div>
-                  </div>
-                  <div class="upload-result" id="res-flex">
-                    ✅ Analiz tamamlandı
-                  </div>
-                </div>
-                <!-- Koşu -->
-                <div>
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">💨 Koşu Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
-                  <div class="upload-zone" onclick="if(checkStudentInfo())document.getElementById('vRun').click()">
-                    <div class="upload-icon">🎥</div>
-                    <div class="upload-title">Video Yükle</div>
-                    <div class="upload-sub">Yan profil · 20m düz koşu</div>
-                  </div>
-                  <div class="upload-result" id="res-run">
-                    ✅ Analiz tamamlandı
-                  </div>
-                </div>
-              </div>
-
-              <div class="analysis-panel" id="analysisPanel">
-                <div style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:12px">AI Analiz Süreci</div>
-                <div class="analysis-step">
-                  <div class="step-icon step-active" id="s1">◎</div>
-                  <span id="s1t">Video işleniyor...</span>
-                </div>
-                <div class="analysis-step">
-                  <div class="step-icon step-pending" id="s2">○</div>
-                  <span style="color:var(--muted)">Pose estimation çalıştırılıyor</span>
-                </div>
-                <div class="analysis-step">
-                  <div class="step-icon step-pending" id="s3">○</div>
-                  <span style="color:var(--muted)">Metrikler hesaplanıyor</span>
-                </div>
-                <div class="analysis-step">
-                  <div class="step-icon step-pending" id="s4">○</div>
-                  <span style="color:var(--muted)">Karne oluşturuluyor</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Optional manual metrics -->
-          <div class="toggle-section">
-            <div class="toggle-header" onclick="toggleManual()">
-              <div class="toggle-header-left">
-                <span>📝</span>
-                <span>Manuel Metrik Girişi</span>
-                <span class="toggle-badge">OPSİYONEL</span>
-              </div>
-              <span id="toggleArrow" style="color:var(--muted);font-size:12px">▼ Göster</span>
-            </div>
-            <div class="toggle-body" id="manualBody">
-              <p style="font-size:12px;color:var(--muted);margin-bottom:4px">
-                Video analizinin yanı sıra manuel olarak da değerlendirme yapabilirsiniz. (1 = Çok Zayıf · 10 = Mükemmel)
-              </p>
-              <div class="metric-input-row">
-                <div class="metric-slider-field">
-                  <div class="metric-slider-label">Esneklik</div>
-                  <div class="metric-slider-val" id="vEsn">5</div>
-                  <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vEsn').textContent=this.value;metricVals.esneklik=+this.value">
-                </div>
-                <div class="metric-slider-field">
-                  <div class="metric-slider-label">Dayanıklılık</div>
-                  <div class="metric-slider-val" id="vDay">5</div>
-                  <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vDay').textContent=this.value;metricVals.dayaniklilik=+this.value">
-                </div>
-                <div class="metric-slider-field">
-                  <div class="metric-slider-label">Güç</div>
-                  <div class="metric-slider-val" id="vGuc">5</div>
-                  <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vGuc').textContent=this.value;metricVals.guc=+this.value">
-                </div>
-                <div class="metric-slider-field">
-                  <div class="metric-slider-label">Hız</div>
-                  <div class="metric-slider-val" id="vHiz">5</div>
-                  <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vHiz').textContent=this.value;metricVals.hiz=+this.value">
-                </div>
-                <div class="metric-slider-field">
-                  <div class="metric-slider-label">Koordinasyon</div>
-                  <div class="metric-slider-val" id="vKoo">5</div>
-                  <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vKoo').textContent=this.value;metricVals.koordinasyon=+this.value">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:12px">
-            <button class="btn btn-primary" style="flex:1;padding:13px" onclick="saveStudent()">
-              ✓ Öğrenciyi Kaydet & Karne Oluştur
+          <!-- Step 1 action -->
+          <div id="step1Actions" style="display:flex;gap:12px">
+            <button class="btn btn-primary" style="flex:1;padding:13px" onclick="saveStudentInfo()">
+              Bilgileri Kaydet →
             </button>
             <button class="btn btn-ghost" onclick="resetForm()">Temizle</button>
           </div>
+
+          <!-- Step 2: shown after student info is saved -->
+          <div id="step2Section" style="display:none">
+
+            <!-- Success banner -->
+            <div id="step2Banner" style="display:flex;align-items:center;gap:12px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);border-radius:12px;padding:14px 18px;margin-top:20px">
+              <span style="font-size:22px">✅</span>
+              <div>
+                <div id="step2BannerName" style="font-weight:600;font-size:15px;color:#4ade80"></div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px">Bilgiler kaydedildi. İsterseniz aşağıdan video ekleyebilirsiniz.</div>
+              </div>
+            </div>
+
+            <div class="section-divider" style="margin-top:20px">
+              <span>Video Analizi</span>
+            </div>
+
+            <div class="card" style="margin-bottom:20px">
+              <div class="card-body">
+                <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+                  📌 Öğrenci standart spor salonu koşullarında çekilmeli. Her video için öğrenci tam yana veya cepheye dursun.
+                </p>
+
+                <input type="file" id="vJump" accept="video/*" style="display:none" onchange="handleVideoUpload(this,'jump')">
+                <input type="file" id="vFlex" accept="video/*" style="display:none" onchange="handleVideoUpload(this,'flex')">
+                <input type="file" id="vRun"  accept="video/*" style="display:none" onchange="handleVideoUpload(this,'run')">
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                  <!-- Zıplama -->
+                  <div>
+                    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🏃 Zıplama Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
+                    <div class="upload-zone" onclick="document.getElementById('vJump').click()">
+                      <div class="upload-icon">🎥</div>
+                      <div class="upload-title">Video Yükle</div>
+                      <div class="upload-sub">Yan profil · 3× maksimum zıplama</div>
+                    </div>
+                    <div class="upload-result" id="res-jump">
+                      ✅ Analiz tamamlandı
+                    </div>
+                  </div>
+                  <!-- Esneklik -->
+                  <div>
+                    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">🤸 Esneklik Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
+                    <div class="upload-zone" onclick="document.getElementById('vFlex').click()">
+                      <div class="upload-icon">🎥</div>
+                      <div class="upload-title">Video Yükle</div>
+                      <div class="upload-sub">Cephe · Kol açma + öne eğilme</div>
+                    </div>
+                    <div class="upload-result" id="res-flex">
+                      ✅ Analiz tamamlandı
+                    </div>
+                  </div>
+                  <!-- Koşu -->
+                  <div>
+                    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;font-weight:600">💨 Koşu Videosu <span style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:400;text-transform:none;letter-spacing:0">Opsiyonel</span></div>
+                    <div class="upload-zone" onclick="document.getElementById('vRun').click()">
+                      <div class="upload-icon">🎥</div>
+                      <div class="upload-title">Video Yükle</div>
+                      <div class="upload-sub">Yan profil · 20m düz koşu</div>
+                    </div>
+                    <div class="upload-result" id="res-run">
+                      ✅ Analiz tamamlandı
+                    </div>
+                  </div>
+                </div>
+
+                <div class="analysis-panel" id="analysisPanel">
+                  <div style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:12px">AI Analiz Süreci</div>
+                  <div class="analysis-step">
+                    <div class="step-icon step-active" id="s1">◎</div>
+                    <span id="s1t">Video işleniyor...</span>
+                  </div>
+                  <div class="analysis-step">
+                    <div class="step-icon step-pending" id="s2">○</div>
+                    <span style="color:var(--muted)">Pose estimation çalıştırılıyor</span>
+                  </div>
+                  <div class="analysis-step">
+                    <div class="step-icon step-pending" id="s3">○</div>
+                    <span style="color:var(--muted)">Metrikler hesaplanıyor</span>
+                  </div>
+                  <div class="analysis-step">
+                    <div class="step-icon step-pending" id="s4">○</div>
+                    <span style="color:var(--muted)">Karne oluşturuluyor</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional manual metrics -->
+            <div class="toggle-section">
+              <div class="toggle-header" onclick="toggleManual()">
+                <div class="toggle-header-left">
+                  <span>📝</span>
+                  <span>Manuel Metrik Girişi</span>
+                  <span class="toggle-badge">OPSİYONEL</span>
+                </div>
+                <span id="toggleArrow" style="color:var(--muted);font-size:12px">▼ Göster</span>
+              </div>
+              <div class="toggle-body" id="manualBody">
+                <p style="font-size:12px;color:var(--muted);margin-bottom:4px">
+                  Video analizinin yanı sıra manuel olarak da değerlendirme yapabilirsiniz. (1 = Çok Zayıf · 10 = Mükemmel)
+                </p>
+                <div class="metric-input-row">
+                  <div class="metric-slider-field">
+                    <div class="metric-slider-label">Esneklik</div>
+                    <div class="metric-slider-val" id="vEsn">5</div>
+                    <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vEsn').textContent=this.value;metricVals.esneklik=+this.value">
+                  </div>
+                  <div class="metric-slider-field">
+                    <div class="metric-slider-label">Dayanıklılık</div>
+                    <div class="metric-slider-val" id="vDay">5</div>
+                    <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vDay').textContent=this.value;metricVals.dayaniklilik=+this.value">
+                  </div>
+                  <div class="metric-slider-field">
+                    <div class="metric-slider-label">Güç</div>
+                    <div class="metric-slider-val" id="vGuc">5</div>
+                    <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vGuc').textContent=this.value;metricVals.guc=+this.value">
+                  </div>
+                  <div class="metric-slider-field">
+                    <div class="metric-slider-label">Hız</div>
+                    <div class="metric-slider-val" id="vHiz">5</div>
+                    <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vHiz').textContent=this.value;metricVals.hiz=+this.value">
+                  </div>
+                  <div class="metric-slider-field">
+                    <div class="metric-slider-label">Koordinasyon</div>
+                    <div class="metric-slider-val" id="vKoo">5</div>
+                    <input type="range" min="1" max="10" value="5" oninput="document.getElementById('vKoo').textContent=this.value;metricVals.koordinasyon=+this.value">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px">
+              <button class="btn btn-primary" style="flex:1;padding:13px" onclick="saveStudent()">
+                ✓ Öğrenciyi Kaydet & Karne Oluştur
+              </button>
+              <button class="btn btn-ghost" onclick="resetForm()">Temizle</button>
+            </div>
+
+          </div><!-- /step2Section -->
         </div>
       </div>
 
@@ -1448,14 +1470,15 @@
   // ========== Form ==========
   function triggerUpload(id) { document.getElementById(id).click(); }
 
-  function checkStudentInfo() {
+  function saveStudentInfo() {
     const name   = document.getElementById('fName').value.trim();
     const height = document.getElementById('fHeight').value.trim();
-    if(!name || !height) {
-      showToast('⚠️', 'Lütfen önce öğrenci bilgilerini doldurun');
-      return false;
-    }
-    return true;
+    if(!name) { showToast('⚠️', 'Ad Soyad alanı zorunludur!'); return; }
+    if(!height) { showToast('⚠️', 'Boy alanı zorunludur!'); return; }
+    document.getElementById('step2BannerName').textContent = name + ' bilgileri kaydedildi';
+    document.getElementById('step1Actions').style.display = 'none';
+    document.getElementById('step2Section').style.display = 'block';
+    document.getElementById('step2Section').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function stepDone(id) {
@@ -1614,6 +1637,8 @@
     metricVals = { esneklik:5, dayaniklilik:5, guc:5, hiz:5, koordinasyon:5 };
     document.querySelectorAll('input[type=range]').forEach(r=>{ r.value=5; });
     ['vEsn','vDay','vGuc','vHiz','vKoo'].forEach(id=>document.getElementById(id).textContent='5');
+    document.getElementById('step2Section').style.display = 'none';
+    document.getElementById('step1Actions').style.display = 'flex';
   }
 
   // ========== Karne ==========
